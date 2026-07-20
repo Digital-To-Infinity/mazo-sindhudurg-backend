@@ -1,0 +1,2 @@
+// Placeholder — Prisma manages migrations automatically via `prisma migrate dev`
+// Run: npx prisma migrate dev --name init
