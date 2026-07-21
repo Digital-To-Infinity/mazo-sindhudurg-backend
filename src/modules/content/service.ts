@@ -5,7 +5,7 @@ import { slugify } from '@/shared/slug'
 const repo = new ContentRepository()
 
 export class ContentService {
-  async getAll(params: { q?: string; type?: string; status?: string; page: number; limit: number }) {
+  async getAll(params: { q?: string; slug?: string; type?: string; status?: string; page: number; limit: number }) {
     return repo.findAll(params)
   }
 

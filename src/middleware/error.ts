@@ -8,11 +8,12 @@ export function errorHandler(
   _next: NextFunction
 ) {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
+    const responsePayload: any = {
       success: false,
       message: err.message,
-      ...(err.details && { errors: err.details }),
-    })
+    }
+    if (err.details) responsePayload.errors = err.details;
+    return res.status(err.statusCode).json(responsePayload)
   }
 
   // Prisma unique constraint

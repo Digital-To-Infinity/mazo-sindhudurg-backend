@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const contentTypeEnum = z.enum(['PAGE', 'BEACH', 'FORT', 'FOOD', 'STAY', 'ACTIVITY', 'EVENT'])
+const contentTypeEnum = z.enum(['PAGE', 'BEACH', 'FORT', 'FOOD', 'STAY', 'ACTIVITY', 'EVENT', 'BLOG'])
 const contentStatusEnum = z.enum(['DRAFT', 'PUBLISHED', 'PENDING'])
 
 export const createContentSchema = z.object({

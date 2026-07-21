@@ -2,6 +2,7 @@ import { db } from '@/config/database'
 
 interface FindAllParams {
   q?: string
+  slug?: string
   type?: string
   status?: string
   page: number
@@ -9,9 +10,10 @@ interface FindAllParams {
 }
 
 export class ContentRepository {
-  async findAll({ q, type, status, page, limit }: FindAllParams) {
+  async findAll({ q, slug, type, status, page, limit }: FindAllParams) {
     const where: any = {}
     if (q) where.OR = [{ title: { contains: q } }, { excerpt: { contains: q } }]
+    if (slug) where.slug = slug
     if (type && type !== 'all') where.type = type.toUpperCase()
     if (status) where.status = status.toUpperCase()
 

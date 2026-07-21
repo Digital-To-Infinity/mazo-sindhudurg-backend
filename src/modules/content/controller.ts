@@ -8,8 +8,8 @@ const service = new ContentService()
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { page, limit } = parsePagination(req.query)
-    const { q, type, status } = req.query as Record<string, string>
-    const result = await service.getAll({ q, type, status, page, limit })
+    const { q, slug, type, status } = req.query as Record<string, string>
+    const result = await service.getAll({ q, slug, type, status, page, limit })
     sendSuccess(res, result)
   } catch (err) { next(err) }
 }
