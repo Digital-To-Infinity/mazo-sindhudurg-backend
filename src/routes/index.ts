@@ -5,6 +5,7 @@ import contentRoutes from '@/modules/content/routes'
 import taxonomyRoutes from '@/modules/taxonomy/routes'
 import mediaRoutes from '@/modules/media/routes'
 import seoRoutes from '@/modules/seo/routes'
+import authorRoutes from '@/modules/authors/routes'
 import { search } from '@/modules/search/index'
 import { getAll as getSubmissions, create as createSubmission, updateStatus } from '@/modules/submissions/index'
 import { getAll as getSettings, upsert as upsertSetting } from '@/modules/settings/index'
@@ -19,6 +20,7 @@ router.use('/content', contentRoutes)
 router.use('/taxonomies', taxonomyRoutes)
 router.use('/media', mediaRoutes)
 router.use('/seo', seoRoutes)
+router.use('/authors', authorRoutes)
 
 // Search
 router.get('/search', search)

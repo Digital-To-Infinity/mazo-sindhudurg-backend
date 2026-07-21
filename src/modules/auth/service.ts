@@ -6,30 +6,39 @@ import { UnauthorizedError, NotFoundError } from '@/shared/errors'
 
 export class AuthService {
   async login(email: string, password: string) {
-    const user = await db.user.findUnique({ where: { email } })
+    const user = await db.user.findUnique({ where: { email }, include: { roles: true } })
     if (!user) throw new UnauthorizedError('Invalid credentials')
 
-    const valid = await bcrypt.compare(password, user.password)
+    const valid = await bcrypt.compare(password, user.password_hash)
     if (!valid) throw new UnauthorizedError('Invalid credentials')
 
+    const roleName = user.roles.slug === 'super-admin' || user.roles.slug === 'admin' ? 'ADMIN' : 'EDITOR'
+
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
+      { userId: user.id.toString(), role: roleName },
       env.JWT_SECRET as string,
       { expiresIn: env.JWT_EXPIRES_IN as any }
     )
 
     return {
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id.toString(), email: user.email, role: roleName },
     }
   }
 
-  async getMe(userId: number) {
+  async getMe(userId: string) {
     const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, role: true, createdAt: true },
+      where: { id: BigInt(userId) },
+      include: { roles: true }
     })
     if (!user) throw new NotFoundError('User not found')
-    return user
+    
+    const roleName = user.roles.slug === 'super-admin' || user.roles.slug === 'admin' ? 'ADMIN' : 'EDITOR'
+    return {
+      id: user.id.toString(),
+      email: user.email,
+      role: roleName,
+      createdAt: user.created_at
+    }
   }
 }

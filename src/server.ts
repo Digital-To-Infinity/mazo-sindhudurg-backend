@@ -4,6 +4,10 @@ import { db } from './config/database'
 
 const PORT = Number(env.PORT) || 5000
 
+;(BigInt.prototype as any).toJSON = function () {
+  return this.toString()
+}
+
 async function bootstrap() {
   try {
     // Test database connection

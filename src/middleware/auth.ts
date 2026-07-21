@@ -4,7 +4,7 @@ import { env } from '@/config/env'
 import { UnauthorizedError } from '@/shared/errors'
 
 interface JwtPayload {
-  userId: number
+  userId: string
   role: string
 }
 

@@ -1,0 +1,170 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Route {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  type      RouteType @default(PAGE)
+  title     String
+  subtitle  String?
+  priority  Float    @default(0.7)
+  content   Json?
+  contentId Int?
+  Content   Content? @relation(fields: [contentId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("routes")
+}
+
+model Content {
+  id          Int           @id @default(autoincrement())
+  title       String
+  slug        String        @unique
+  excerpt     String?       @db.Text
+  type        ContentType
+  status      ContentStatus @default(DRAFT)
+  heroImage   String?
+  thumbnail   String?
+  body        Json?
+  routes      Route[]
+  seo         Seo?
+  taxonomies  ContentTaxonomy[]
+  media       ContentMedia[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("content")
+}
+
+model Taxonomy {
+  id       Int               @id @default(autoincrement())
+  name     String
+  slug     String            @unique
+  type     String
+  contents ContentTaxonomy[]
+
+  @@map("taxonomies")
+}
+
+model ContentTaxonomy {
+  contentId  Int
+  taxonomyId Int
+  content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  taxonomy   Taxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, taxonomyId])
+  @@map("content_taxonomies")
+}
+
+model Media {
+  id        Int            @id @default(autoincrement())
+  url       String
+  publicId  String         @unique
+  altText   String?
+  width     Int
+  height    Int
+  format    String
+  bytes     Int
+  contents  ContentMedia[]
+  createdAt DateTime       @default(now())
+
+  @@map("media")
+}
+
+model ContentMedia {
+  contentId Int
+  mediaId   Int
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, mediaId])
+  @@map("content_media")
+}
+
+model Seo {
+  id              Int     @id @default(autoincrement())
+  contentId       Int     @unique
+  metaTitle       String?
+  metaDescription String? @db.Text
+  ogImage         String?
+  canonicalUrl    String?
+  jsonLd          Json?
+  content         Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@map("seo")
+}
+
+model Submission {
+  id          Int              @id @default(autoincrement())
+  name        String
+  email       String
+  businessName String
+  category    String
+  description String           @db.Text
+  status      SubmissionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  @@map("submissions")
+}
+
+model Setting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum RouteType {
+  PAGE
+  LISTING
+}
+
+enum ContentType {
+  PAGE
+  BEACH
+  FORT
+  FOOD
+  STAY
+  ACTIVITY
+  EVENT
+  BLOG
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  PENDING
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

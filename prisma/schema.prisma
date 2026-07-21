@@ -1,6 +1,3 @@
-// This is your Prisma schema file
-// Learn more: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,160 +8,1058 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role     @default(EDITOR)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                                                                    BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  role_id                                                               BigInt                 @db.UnsignedBigInt
+  name                                                                  String                 @db.VarChar(150)
+  email                                                                 String                 @unique(map: "uq_users_email") @db.VarChar(255)
+  phone                                                                 String?                @unique(map: "uq_users_phone") @db.VarChar(30)
+  password_hash                                                         String                 @db.VarChar(255)
+  status                                                                users_status           @default(active)
+  email_verified_at                                                     DateTime?              @db.DateTime(0)
+  last_login_at                                                         DateTime?              @db.DateTime(0)
+  created_at                                                            DateTime               @default(now()) @db.DateTime(0)
+  updated_at                                                            DateTime               @default(now()) @db.DateTime(0)
+  deleted_at                                                            DateTime?              @db.DateTime(0)
+  article_revisions                                                     article_revisions[]
+  articles_articles_created_byTousers                                   articles[]             @relation("articles_created_byTousers")
+  articles_articles_updated_byTousers                                   articles[]             @relation("articles_updated_byTousers")
+  attractions_attractions_created_byTousers                             attractions[]          @relation("attractions_created_byTousers")
+  attractions_attractions_updated_byTousers                             attractions[]          @relation("attractions_updated_byTousers")
+  audit_logs                                                            audit_logs[]
+  authors                                                               authors?
+  business_submissions_business_submissions_reviewed_byTousers          business_submissions[] @relation("business_submissions_reviewed_byTousers")
+  business_submissions_business_submissions_submitted_by_user_idTousers business_submissions[] @relation("business_submissions_submitted_by_user_idTousers")
+  businesses_businesses_created_byTousers                               businesses[]           @relation("businesses_created_byTousers")
+  businesses_businesses_owner_user_idTousers                            businesses[]           @relation("businesses_owner_user_idTousers")
+  businesses_businesses_updated_byTousers                               businesses[]           @relation("businesses_updated_byTousers")
+  contact_submissions                                                   contact_submissions[]
+  content_imports                                                       content_imports[]
+  events_events_created_byTousers                                       events[]               @relation("events_created_byTousers")
+  events_events_updated_byTousers                                       events[]               @relation("events_updated_byTousers")
+  faqs                                                                  faqs[]
+  media                                                                 Media[]
+  pages_pages_created_byTousers                                         pages[]                @relation("pages_created_byTousers")
+  pages_pages_updated_byTousers                                         pages[]                @relation("pages_updated_byTousers")
+  redirects                                                             redirects[]
+  reviews_reviews_moderated_byTousers                                   reviews[]              @relation("reviews_moderated_byTousers")
+  reviews_reviews_user_idTousers                                        reviews[]              @relation("reviews_user_idTousers")
+  schema_markup                                                         schema_markup[]
+  site_settings                                                         site_settings[]
+  roles                                                                 roles                  @relation(fields: [role_id], references: [id], map: "fk_users_role")
 
+  @@index([role_id, status], map: "idx_users_role_status")
   @@map("users")
 }
 
 model Route {
-  id        Int      @id @default(autoincrement())
-  slug      String   @unique
-  type      RouteType @default(PAGE)
-  title     String
-  subtitle  String?
-  priority  Float    @default(0.7)
-  content   Json?
-  contentId Int?
-  Content   Content? @relation(fields: [contentId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  parent_route_id BigInt?           @db.UnsignedBigInt
+  path            String            @unique(map: "uq_routes_path") @db.VarChar(500)
+  label           String            @db.VarChar(255)
+  entity_type     String?           @db.VarChar(50)
+  entity_id       BigInt?           @db.UnsignedBigInt
+  route_type      routes_route_type
+  template        String            @db.VarChar(100)
+  canonical_path  String?           @db.VarChar(500)
+  is_indexable    Boolean           @default(true)
+  status          routes_status     @default(active)
+  display_order   Int               @default(0)
+  created_at      DateTime          @default(now()) @db.DateTime(0)
+  updated_at      DateTime          @default(now()) @db.DateTime(0)
+  menu_items      menu_items[]
+  routes          Route?            @relation("routesToroutes", fields: [parent_route_id], references: [id], map: "fk_routes_parent")
+  other_routes    Route[]           @relation("routesToroutes")
 
+  @@index([entity_type, entity_id], map: "idx_routes_entity")
+  @@index([parent_route_id, display_order], map: "idx_routes_parent_order")
+  @@index([status], map: "idx_routes_status")
   @@map("routes")
 }
 
-model Content {
-  id          Int           @id @default(autoincrement())
-  title       String
-  slug        String        @unique
-  excerpt     String?       @db.Text
-  type        ContentType
-  status      ContentStatus @default(DRAFT)
-  heroImage   String?
-  thumbnail   String?
-  body        Json?
-  routes      Route[]
-  seo         Seo?
-  taxonomies  ContentTaxonomy[]
-  media       ContentMedia[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@map("content")
-}
-
-model Taxonomy {
-  id       Int               @id @default(autoincrement())
-  name     String
-  slug     String            @unique
-  type     String
-  contents ContentTaxonomy[]
-
-  @@map("taxonomies")
-}
-
-model ContentTaxonomy {
-  contentId  Int
-  taxonomyId Int
-  content    Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  taxonomy   Taxonomy @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
-
-  @@id([contentId, taxonomyId])
-  @@map("content_taxonomies")
-}
-
 model Media {
-  id        Int            @id @default(autoincrement())
-  url       String
-  publicId  String         @unique
-  altText   String?
-  width     Int
-  height    Int
-  format    String
-  bytes     Int
-  contents  ContentMedia[]
-  createdAt DateTime       @default(now())
+  id                                                BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  provider                                          String         @default("cloudinary") @db.VarChar(50)
+  asset_id                                          String         @unique(map: "uq_media_asset_id") @db.VarChar(255)
+  public_id                                         String         @unique(map: "uq_media_public_id") @db.VarChar(500)
+  version                                           BigInt?        @db.UnsignedBigInt
+  resource_type                                     String         @default("image") @db.VarChar(50)
+  delivery_type                                     String?        @db.VarChar(50)
+  format                                            String?        @db.VarChar(30)
+  secure_url                                        String         @db.VarChar(1200)
+  width                                             Int?           @db.UnsignedInt
+  height                                            Int?           @db.UnsignedInt
+  bytes                                             BigInt?        @db.UnsignedBigInt
+  folder                                            String?        @db.VarChar(500)
+  original_filename                                 String?        @db.VarChar(255)
+  alt_text                                          String?        @db.VarChar(500)
+  title                                             String?        @db.VarChar(255)
+  caption                                           String?        @db.Text
+  description                                       String?        @db.Text
+  credit                                            String?        @db.VarChar(255)
+  uploaded_by                                       BigInt?        @db.UnsignedBigInt
+  status                                            media_status   @default(active)
+  created_at                                        DateTime       @default(now()) @db.DateTime(0)
+  updated_at                                        DateTime       @default(now()) @db.DateTime(0)
+  deleted_at                                        DateTime?      @db.DateTime(0)
+  articles                                          articles[]
+  attractions                                       attractions[]
+  authors                                           authors[]
+  businesses_businesses_cover_media_idTomedia       businesses[]   @relation("businesses_cover_media_idTomedia")
+  businesses_businesses_logo_media_idTomedia        businesses[]   @relation("businesses_logo_media_idTomedia")
+  categories                                        categories[]
+  destinations                                      destinations[]
+  entity_media                                      entity_media[]
+  events                                            events[]
+  users                                             User?          @relation(fields: [uploaded_by], references: [id], map: "fk_media_uploader")
+  pages                                             pages[]
+  seo_metadata_seo_metadata_og_image_idTomedia      seo_metadata[] @relation("seo_metadata_og_image_idTomedia")
+  seo_metadata_seo_metadata_twitter_image_idTomedia seo_metadata[] @relation("seo_metadata_twitter_image_idTomedia")
 
+  @@index([status, created_at], map: "idx_media_status_created")
+  @@index([uploaded_by], map: "idx_media_uploader")
   @@map("media")
 }
 
-model ContentMedia {
-  contentId Int
-  mediaId   Int
-  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
-  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+model article_revisions {
+  id               BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  article_id       BigInt   @db.UnsignedBigInt
+  revision_number  Int      @db.UnsignedInt
+  title            String   @db.VarChar(255)
+  excerpt          String?  @db.Text
+  content_markdown String?  @db.LongText
+  content_html     String?  @db.LongText
+  content_json     String?  @db.LongText
+  changed_by       BigInt?  @db.UnsignedBigInt
+  change_summary   String?  @db.VarChar(500)
+  created_at       DateTime @default(now()) @db.DateTime(0)
+  articles         articles @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "fk_article_revisions_article")
+  users            User?    @relation(fields: [changed_by], references: [id], map: "fk_article_revisions_user")
 
-  @@id([contentId, mediaId])
-  @@map("content_media")
+  @@unique([article_id, revision_number], map: "uq_article_revision")
+  @@index([changed_by], map: "fk_article_revisions_user")
 }
 
-model Seo {
-  id              Int     @id @default(autoincrement())
-  contentId       Int     @unique
-  metaTitle       String?
-  metaDescription String? @db.Text
-  ogImage         String?
-  canonicalUrl    String?
-  jsonLd          Json?
-  content         Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+model article_tags {
+  article_id BigInt   @db.UnsignedBigInt
+  tag_id     BigInt   @db.UnsignedBigInt
+  created_at DateTime @default(now()) @db.DateTime(0)
+  articles   articles @relation(fields: [article_id], references: [id], onDelete: Cascade, map: "fk_article_tags_article")
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, map: "fk_article_tags_tag")
 
-  @@map("seo")
+  @@id([article_id, tag_id])
+  @@index([tag_id], map: "fk_article_tags_tag")
 }
 
-model Submission {
-  id          Int              @id @default(autoincrement())
-  name        String
-  email       String
-  businessName String
-  category    String
-  description String           @db.Text
-  status      SubmissionStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
+model articles {
+  id                               BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  author_id                        BigInt?               @db.UnsignedBigInt
+  destination_id                   BigInt?               @db.UnsignedBigInt
+  content_type                     articles_content_type @default(guide)
+  title                            String                @db.VarChar(255)
+  slug                             String                @db.VarChar(220)
+  excerpt                          String?               @db.Text
+  content_markdown                 String?               @db.LongText
+  content_html                     String?               @db.LongText
+  content_json                     String?               @db.LongText
+  hero_media_id                    BigInt?               @db.UnsignedBigInt
+  table_of_contents_json           String?               @db.LongText
+  reading_time_minutes             Int?                  @db.UnsignedSmallInt
+  word_count                       Int?                  @db.UnsignedInt
+  status                           articles_status       @default(draft)
+  visibility                       articles_visibility   @default(public)
+  password_hash                    String?               @db.VarChar(255)
+  is_featured                      Boolean               @default(false)
+  allow_comments                   Boolean               @default(false)
+  scheduled_at                     DateTime?             @db.DateTime(0)
+  published_at                     DateTime?             @db.DateTime(0)
+  created_by                       BigInt?               @db.UnsignedBigInt
+  updated_by                       BigInt?               @db.UnsignedBigInt
+  created_at                       DateTime              @default(now()) @db.DateTime(0)
+  updated_at                       DateTime              @default(now()) @db.DateTime(0)
+  deleted_at                       DateTime?             @db.DateTime(0)
+  article_revisions                article_revisions[]
+  article_tags                     article_tags[]
+  authors                          authors?              @relation(fields: [author_id], references: [id], map: "fk_articles_author")
+  users_articles_created_byTousers User?                 @relation("articles_created_byTousers", fields: [created_by], references: [id], map: "fk_articles_created_by")
+  destinations                     destinations?         @relation(fields: [destination_id], references: [id], map: "fk_articles_destination")
+  media                            Media?                @relation(fields: [hero_media_id], references: [id], map: "fk_articles_hero_media")
+  users_articles_updated_byTousers User?                 @relation("articles_updated_byTousers", fields: [updated_by], references: [id], map: "fk_articles_updated_by")
+  content_imports                  content_imports[]
 
-  @@map("submissions")
+  @@unique([content_type, slug], map: "uq_articles_type_slug")
+  @@index([created_by], map: "fk_articles_created_by")
+  @@index([hero_media_id], map: "fk_articles_hero_media")
+  @@index([updated_by], map: "fk_articles_updated_by")
+  // @@index([title, excerpt, content_html], map: "ft_articles_content")
+  @@index([author_id], map: "idx_articles_author")
+  @@index([destination_id], map: "idx_articles_destination")
+  @@index([is_featured], map: "idx_articles_featured")
+  @@index([content_type, status, published_at], map: "idx_articles_type_status_date")
 }
 
-model Setting {
-  key       String   @id
-  value     String   @db.Text
-  updatedAt DateTime @updatedAt
+model attractions {
+  id                                  BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  destination_id                      BigInt?            @db.UnsignedBigInt
+  name                                String             @db.VarChar(255)
+  slug                                String             @unique(map: "uq_attractions_slug") @db.VarChar(220)
+  short_description                   String?            @db.VarChar(1000)
+  content_html                        String?            @db.LongText
+  content_json                        String?            @db.LongText
+  history                             String?            @db.LongText
+  things_to_do                        String?            @db.LongText
+  best_time_to_visit                  String?            @db.VarChar(500)
+  recommended_duration                String?            @db.VarChar(100)
+  entry_fee                           String?            @db.VarChar(255)
+  timings                             String?            @db.VarChar(255)
+  address                             String?            @db.VarChar(1000)
+  latitude                            Decimal?           @db.Decimal(10, 7)
+  longitude                           Decimal?           @db.Decimal(10, 7)
+  google_maps_url                     String?            @db.VarChar(1000)
+  phone                               String?            @db.VarChar(30)
+  email                               String?            @db.VarChar(255)
+  website_url                         String?            @db.VarChar(500)
+  hero_media_id                       BigInt?            @db.UnsignedBigInt
+  is_featured                         Boolean            @default(false)
+  is_verified                         Boolean            @default(false)
+  family_friendly                     Boolean            @default(false)
+  parking_available                   Boolean            @default(false)
+  status                              attractions_status @default(draft)
+  published_at                        DateTime?          @db.DateTime(0)
+  created_by                          BigInt?            @db.UnsignedBigInt
+  updated_by                          BigInt?            @db.UnsignedBigInt
+  created_at                          DateTime           @default(now()) @db.DateTime(0)
+  updated_at                          DateTime           @default(now()) @db.DateTime(0)
+  deleted_at                          DateTime?          @db.DateTime(0)
+  users_attractions_created_byTousers User?              @relation("attractions_created_byTousers", fields: [created_by], references: [id], map: "fk_attractions_created_by")
+  destinations                        destinations?      @relation(fields: [destination_id], references: [id], map: "fk_attractions_destination")
+  media                               Media?             @relation(fields: [hero_media_id], references: [id], map: "fk_attractions_hero_media")
+  users_attractions_updated_byTousers User?              @relation("attractions_updated_byTousers", fields: [updated_by], references: [id], map: "fk_attractions_updated_by")
 
-  @@map("settings")
+  @@index([created_by], map: "fk_attractions_created_by")
+  @@index([hero_media_id], map: "fk_attractions_hero_media")
+  @@index([updated_by], map: "fk_attractions_updated_by")
+  // @@index([name, short_description, content_html], map: "ft_attractions_content")
+  @@index([destination_id, status], map: "idx_attractions_destination_status")
+  @@index([is_featured], map: "idx_attractions_featured")
 }
 
-enum Role {
-  ADMIN
-  EDITOR
+model audit_logs {
+  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id         BigInt?  @db.UnsignedBigInt
+  action          String   @db.VarChar(150)
+  entity_type     String?  @db.VarChar(50)
+  entity_id       BigInt?  @db.UnsignedBigInt
+  old_values_json String?  @db.LongText
+  new_values_json String?  @db.LongText
+  ip_address      String?  @db.VarChar(45)
+  user_agent      String?  @db.VarChar(1000)
+  created_at      DateTime @default(now()) @db.DateTime(0)
+  users           User?    @relation(fields: [user_id], references: [id], map: "fk_audit_logs_user")
+
+  @@index([action], map: "idx_audit_action")
+  @@index([entity_type, entity_id, created_at], map: "idx_audit_entity")
+  @@index([user_id, created_at], map: "idx_audit_user_date")
 }
 
-enum RouteType {
-  PAGE
-  LISTING
+model authors {
+  id               BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id          BigInt?        @unique(map: "uq_authors_user") @db.UnsignedBigInt
+  name             String         @db.VarChar(150)
+  slug             String         @unique(map: "uq_authors_slug") @db.VarChar(180)
+  designation      String?        @db.VarChar(150)
+  short_bio        String?        @db.VarChar(500)
+  full_bio         String?        @db.Text
+  profile_media_id BigInt?        @db.UnsignedBigInt
+  email            String?        @db.VarChar(255)
+  website_url      String?        @db.VarChar(500)
+  facebook_url     String?        @db.VarChar(500)
+  instagram_url    String?        @db.VarChar(500)
+  linkedin_url     String?        @db.VarChar(500)
+  twitter_url      String?        @db.VarChar(500)
+  status           authors_status @default(active)
+  created_at       DateTime       @default(now()) @db.DateTime(0)
+  updated_at       DateTime       @default(now()) @db.DateTime(0)
+  deleted_at       DateTime?      @db.DateTime(0)
+  articles         articles[]
+  media            Media?         @relation(fields: [profile_media_id], references: [id], map: "fk_authors_profile_media")
+  users            User?          @relation(fields: [user_id], references: [id], map: "fk_authors_user")
+
+  @@index([profile_media_id], map: "fk_authors_profile_media")
 }
 
-enum ContentType {
-  PAGE
-  BEACH
-  FORT
-  FOOD
-  STAY
-  ACTIVITY
-  EVENT
-  BLOG
+model business_hours {
+  id                BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  business_id       BigInt     @db.UnsignedBigInt
+  day_of_week       Int        @db.UnsignedTinyInt
+  is_closed         Boolean    @default(false)
+  open_time         DateTime?  @db.Time(0)
+  close_time        DateTime?  @db.Time(0)
+  second_open_time  DateTime?  @db.Time(0)
+  second_close_time DateTime?  @db.Time(0)
+  created_at        DateTime   @default(now()) @db.DateTime(0)
+  updated_at        DateTime   @default(now()) @db.DateTime(0)
+  businesses        businesses @relation(fields: [business_id], references: [id], onDelete: Cascade, map: "fk_business_hours_business")
+
+  @@unique([business_id, day_of_week], map: "uq_business_hours_day")
 }
 
-enum ContentStatus {
-  DRAFT
-  PUBLISHED
-  PENDING
+model business_services {
+  id            BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  business_id   BigInt                   @db.UnsignedBigInt
+  name          String                   @db.VarChar(255)
+  slug          String                   @db.VarChar(220)
+  description   String?                  @db.Text
+  price_from    Decimal?                 @db.Decimal(12, 2)
+  price_to      Decimal?                 @db.Decimal(12, 2)
+  currency      String                   @default("INR") @db.Char(3)
+  display_order Int                      @default(0)
+  status        business_services_status @default(active)
+  created_at    DateTime                 @default(now()) @db.DateTime(0)
+  updated_at    DateTime                 @default(now()) @db.DateTime(0)
+  businesses    businesses               @relation(fields: [business_id], references: [id], onDelete: Cascade, map: "fk_business_services_business")
+
+  @@unique([business_id, slug], map: "uq_business_service_slug")
 }
 
-enum SubmissionStatus {
-  PENDING
-  APPROVED
-  REJECTED
+model business_submissions {
+  id                                                     BigInt                      @id @default(autoincrement()) @db.UnsignedBigInt
+  submitted_by_user_id                                   BigInt?                     @db.UnsignedBigInt
+  business_name                                          String                      @db.VarChar(255)
+  category_id                                            BigInt?                     @db.UnsignedBigInt
+  destination_id                                         BigInt?                     @db.UnsignedBigInt
+  contact_name                                           String                      @db.VarChar(150)
+  phone                                                  String?                     @db.VarChar(30)
+  whatsapp_number                                        String?                     @db.VarChar(30)
+  email                                                  String?                     @db.VarChar(255)
+  website_url                                            String?                     @db.VarChar(500)
+  address                                                String?                     @db.VarChar(1000)
+  description                                            String?                     @db.Text
+  submission_payload_json                                String?                     @db.LongText
+  status                                                 business_submissions_status @default(pending)
+  reviewed_by                                            BigInt?                     @db.UnsignedBigInt
+  reviewed_at                                            DateTime?                   @db.DateTime(0)
+  rejection_reason                                       String?                     @db.Text
+  created_at                                             DateTime                    @default(now()) @db.DateTime(0)
+  updated_at                                             DateTime                    @default(now()) @db.DateTime(0)
+  categories                                             categories?                 @relation(fields: [category_id], references: [id], map: "fk_business_submissions_category")
+  destinations                                           destinations?               @relation(fields: [destination_id], references: [id], map: "fk_business_submissions_destination")
+  users_business_submissions_reviewed_byTousers          User?                       @relation("business_submissions_reviewed_byTousers", fields: [reviewed_by], references: [id], map: "fk_business_submissions_reviewer")
+  users_business_submissions_submitted_by_user_idTousers User?                       @relation("business_submissions_submitted_by_user_idTousers", fields: [submitted_by_user_id], references: [id], map: "fk_business_submissions_user")
+
+  @@index([category_id], map: "fk_business_submissions_category")
+  @@index([destination_id], map: "fk_business_submissions_destination")
+  @@index([reviewed_by], map: "fk_business_submissions_reviewer")
+  @@index([submitted_by_user_id], map: "fk_business_submissions_user")
+  @@index([status, created_at], map: "idx_business_submissions_status")
+}
+
+model businesses {
+  id                                     BigInt                         @id @default(autoincrement()) @db.UnsignedBigInt
+  owner_user_id                          BigInt?                        @db.UnsignedBigInt
+  destination_id                         BigInt?                        @db.UnsignedBigInt
+  name                                   String                         @db.VarChar(255)
+  slug                                   String                         @unique(map: "uq_businesses_slug") @db.VarChar(220)
+  legal_name                             String?                        @db.VarChar(255)
+  short_description                      String?                        @db.VarChar(1000)
+  content_html                           String?                        @db.LongText
+  content_json                           String?                        @db.LongText
+  logo_media_id                          BigInt?                        @db.UnsignedBigInt
+  cover_media_id                         BigInt?                        @db.UnsignedBigInt
+  phone                                  String?                        @db.VarChar(30)
+  alternate_phone                        String?                        @db.VarChar(30)
+  whatsapp_number                        String?                        @db.VarChar(30)
+  email                                  String?                        @db.VarChar(255)
+  website_url                            String?                        @db.VarChar(500)
+  facebook_url                           String?                        @db.VarChar(500)
+  instagram_url                          String?                        @db.VarChar(500)
+  youtube_url                            String?                        @db.VarChar(500)
+  linkedin_url                           String?                        @db.VarChar(500)
+  address_line_1                         String?                        @db.VarChar(500)
+  address_line_2                         String?                        @db.VarChar(500)
+  postal_code                            String?                        @db.VarChar(20)
+  latitude                               Decimal?                       @db.Decimal(10, 7)
+  longitude                              Decimal?                       @db.Decimal(10, 7)
+  google_maps_url                        String?                        @db.VarChar(1000)
+  price_range                            String?                        @db.VarChar(100)
+  is_featured                            Boolean                        @default(false)
+  is_verified                            Boolean                        @default(false)
+  verification_status                    businesses_verification_status @default(unverified)
+  claim_status                           businesses_claim_status        @default(unclaimed)
+  status                                 businesses_status              @default(draft)
+  published_at                           DateTime?                      @db.DateTime(0)
+  created_by                             BigInt?                        @db.UnsignedBigInt
+  updated_by                             BigInt?                        @db.UnsignedBigInt
+  created_at                             DateTime                       @default(now()) @db.DateTime(0)
+  updated_at                             DateTime                       @default(now()) @db.DateTime(0)
+  deleted_at                             DateTime?                      @db.DateTime(0)
+  business_hours                         business_hours[]
+  business_services                      business_services[]
+  media_businesses_cover_media_idTomedia Media?                         @relation("businesses_cover_media_idTomedia", fields: [cover_media_id], references: [id], map: "fk_businesses_cover_media")
+  users_businesses_created_byTousers     User?                          @relation("businesses_created_byTousers", fields: [created_by], references: [id], map: "fk_businesses_created_by")
+  destinations                           destinations?                  @relation(fields: [destination_id], references: [id], map: "fk_businesses_destination")
+  media_businesses_logo_media_idTomedia  Media?                         @relation("businesses_logo_media_idTomedia", fields: [logo_media_id], references: [id], map: "fk_businesses_logo_media")
+  users_businesses_owner_user_idTousers  User?                          @relation("businesses_owner_user_idTousers", fields: [owner_user_id], references: [id], map: "fk_businesses_owner")
+  users_businesses_updated_byTousers     User?                          @relation("businesses_updated_byTousers", fields: [updated_by], references: [id], map: "fk_businesses_updated_by")
+  events                                 events[]
+  hotel_profiles                         hotel_profiles?
+
+  @@index([cover_media_id], map: "fk_businesses_cover_media")
+  @@index([created_by], map: "fk_businesses_created_by")
+  @@index([logo_media_id], map: "fk_businesses_logo_media")
+  @@index([updated_by], map: "fk_businesses_updated_by")
+  // @@index([name, short_description, content_html], map: "ft_businesses_content")
+  @@index([destination_id, status], map: "idx_businesses_destination_status")
+  @@index([owner_user_id], map: "idx_businesses_owner")
+  @@index([is_verified, is_featured], map: "idx_businesses_verified_featured")
+}
+
+model categories {
+  id                   BigInt                 @id @default(autoincrement()) @db.UnsignedBigInt
+  parent_id            BigInt?                @db.UnsignedBigInt
+  scope                categories_scope
+  name                 String                 @db.VarChar(180)
+  slug                 String                 @db.VarChar(180)
+  description          String?                @db.Text
+  icon                 String?                @db.VarChar(100)
+  featured_media_id    BigInt?                @db.UnsignedBigInt
+  display_order        Int                    @default(0)
+  status               categories_status      @default(active)
+  created_at           DateTime               @default(now()) @db.DateTime(0)
+  updated_at           DateTime               @default(now()) @db.DateTime(0)
+  business_submissions business_submissions[]
+  media                Media?                 @relation(fields: [featured_media_id], references: [id], map: "fk_categories_featured_media")
+  categories           categories?            @relation("categoriesTocategories", fields: [parent_id], references: [id], map: "fk_categories_parent")
+  other_categories     categories[]           @relation("categoriesTocategories")
+  entity_categories    entity_categories[]
+
+  @@unique([scope, slug], map: "uq_categories_scope_slug")
+  @@index([featured_media_id], map: "fk_categories_featured_media")
+  @@index([parent_id], map: "idx_categories_parent")
+  @@index([scope, status], map: "idx_categories_scope_status")
+}
+
+model contact_submissions {
+  id          BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String                     @db.VarChar(150)
+  email       String?                    @db.VarChar(255)
+  phone       String?                    @db.VarChar(30)
+  subject     String?                    @db.VarChar(255)
+  message     String                     @db.Text
+  source_path String?                    @db.VarChar(500)
+  status      contact_submissions_status @default(new)
+  assigned_to BigInt?                    @db.UnsignedBigInt
+  created_at  DateTime                   @default(now()) @db.DateTime(0)
+  updated_at  DateTime                   @default(now()) @db.DateTime(0)
+  users       User?                      @relation(fields: [assigned_to], references: [id], map: "fk_contact_submissions_assignee")
+
+  @@index([assigned_to], map: "fk_contact_submissions_assignee")
+  @@index([status, created_at], map: "idx_contact_submissions_status")
+}
+
+model content_imports {
+  id               BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
+  article_id       BigInt?                       @db.UnsignedBigInt
+  uploaded_by      BigInt?                       @db.UnsignedBigInt
+  source_type      content_imports_source_type
+  source_filename  String?                       @db.VarChar(255)
+  source_hash      String                        @unique(map: "uq_content_import_source_hash") @db.Char(64)
+  raw_markdown     String?                       @db.LongText
+  frontmatter_json String?                       @db.LongText
+  parsed_data_json String?                       @db.LongText
+  import_status    content_imports_import_status @default(pending)
+  error_message    String?                       @db.Text
+  created_at       DateTime                      @default(now()) @db.DateTime(0)
+  completed_at     DateTime?                     @db.DateTime(0)
+  articles         articles?                     @relation(fields: [article_id], references: [id], map: "fk_content_import_article")
+  users            User?                         @relation(fields: [uploaded_by], references: [id], map: "fk_content_import_user")
+
+  @@index([article_id], map: "fk_content_import_article")
+  @@index([uploaded_by], map: "fk_content_import_user")
+  @@index([import_status, created_at], map: "idx_content_import_status")
+}
+
+model destinations {
+  id                   BigInt                        @id @default(autoincrement()) @db.UnsignedBigInt
+  parent_id            BigInt?                       @db.UnsignedBigInt
+  name                 String                        @db.VarChar(180)
+  slug                 String                        @unique(map: "uq_destinations_slug") @db.VarChar(180)
+  destination_type     destinations_destination_type @default(town)
+  short_description    String?                       @db.VarChar(800)
+  content_html         String?                       @db.LongText
+  content_json         String?                       @db.LongText
+  hero_media_id        BigInt?                       @db.UnsignedBigInt
+  latitude             Decimal?                      @db.Decimal(10, 7)
+  longitude            Decimal?                      @db.Decimal(10, 7)
+  postal_code          String?                       @db.VarChar(20)
+  is_featured          Boolean                       @default(false)
+  status               destinations_status           @default(draft)
+  display_order        Int                           @default(0)
+  published_at         DateTime?                     @db.DateTime(0)
+  created_at           DateTime                      @default(now()) @db.DateTime(0)
+  updated_at           DateTime                      @default(now()) @db.DateTime(0)
+  deleted_at           DateTime?                     @db.DateTime(0)
+  articles             articles[]
+  attractions          attractions[]
+  business_submissions business_submissions[]
+  businesses           businesses[]
+  media                Media?                        @relation(fields: [hero_media_id], references: [id], map: "fk_destinations_hero_media")
+  destinations         destinations?                 @relation("destinationsTodestinations", fields: [parent_id], references: [id], map: "fk_destinations_parent")
+  other_destinations   destinations[]                @relation("destinationsTodestinations")
+  events               events[]
+
+  @@index([hero_media_id], map: "fk_destinations_hero_media")
+  @@index([parent_id], map: "idx_destinations_parent")
+  @@index([status, is_featured], map: "idx_destinations_status_featured")
+}
+
+model entity_categories {
+  id          BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  entity_type String     @db.VarChar(50)
+  entity_id   BigInt     @db.UnsignedBigInt
+  category_id BigInt     @db.UnsignedBigInt
+  is_primary  Boolean    @default(false)
+  created_at  DateTime   @default(now()) @db.DateTime(0)
+  categories  categories @relation(fields: [category_id], references: [id], onDelete: Cascade, map: "fk_entity_categories_category")
+
+  @@unique([entity_type, entity_id, category_id], map: "uq_entity_category")
+  @@index([category_id], map: "idx_entity_categories_category")
+  @@index([entity_type, entity_id, is_primary], map: "idx_entity_categories_lookup")
+}
+
+model entity_faq_links {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  entity_type   String   @db.VarChar(50)
+  entity_id     BigInt   @db.UnsignedBigInt
+  faq_id        BigInt   @db.UnsignedBigInt
+  display_order Int      @default(0)
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  faqs          faqs     @relation(fields: [faq_id], references: [id], onDelete: Cascade, map: "fk_entity_faqs_faq")
+
+  @@unique([entity_type, entity_id, faq_id], map: "uq_entity_faq")
+  @@index([faq_id], map: "fk_entity_faqs_faq")
+  @@index([entity_type, entity_id, display_order], map: "idx_entity_faq_lookup")
+}
+
+model entity_media {
+  id            BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
+  entity_type   String                  @db.VarChar(50)
+  entity_id     BigInt                  @db.UnsignedBigInt
+  media_id      BigInt                  @db.UnsignedBigInt
+  media_role    entity_media_media_role @default(gallery)
+  display_order Int                     @default(0)
+  created_at    DateTime                @default(now()) @db.DateTime(0)
+  media         Media                   @relation(fields: [media_id], references: [id], onDelete: Cascade, map: "fk_entity_media_media")
+
+  @@unique([entity_type, entity_id, media_id, media_role], map: "uq_entity_media")
+  @@index([media_id], map: "fk_entity_media_media")
+  @@index([entity_type, entity_id, media_role, display_order], map: "idx_entity_media_lookup")
+}
+
+model events {
+  id                             BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  destination_id                 BigInt?           @db.UnsignedBigInt
+  organizer_business_id          BigInt?           @db.UnsignedBigInt
+  title                          String            @db.VarChar(255)
+  slug                           String            @unique(map: "uq_events_slug") @db.VarChar(220)
+  short_description              String?           @db.VarChar(1000)
+  content_html                   String?           @db.LongText
+  content_json                   String?           @db.LongText
+  venue_name                     String?           @db.VarChar(255)
+  address                        String?           @db.VarChar(1000)
+  latitude                       Decimal?          @db.Decimal(10, 7)
+  longitude                      Decimal?          @db.Decimal(10, 7)
+  google_maps_url                String?           @db.VarChar(1000)
+  start_at                       DateTime          @db.DateTime(0)
+  end_at                         DateTime?         @db.DateTime(0)
+  timezone                       String            @default("Asia/Kolkata") @db.VarChar(100)
+  entry_type                     events_entry_type @default(free)
+  ticket_price                   Decimal?          @db.Decimal(12, 2)
+  ticket_url                     String?           @db.VarChar(1000)
+  contact_name                   String?           @db.VarChar(150)
+  contact_phone                  String?           @db.VarChar(30)
+  contact_email                  String?           @db.VarChar(255)
+  hero_media_id                  BigInt?           @db.UnsignedBigInt
+  is_featured                    Boolean           @default(false)
+  status                         events_status     @default(draft)
+  published_at                   DateTime?         @db.DateTime(0)
+  created_by                     BigInt?           @db.UnsignedBigInt
+  updated_by                     BigInt?           @db.UnsignedBigInt
+  created_at                     DateTime          @default(now()) @db.DateTime(0)
+  updated_at                     DateTime          @default(now()) @db.DateTime(0)
+  deleted_at                     DateTime?         @db.DateTime(0)
+  users_events_created_byTousers User?             @relation("events_created_byTousers", fields: [created_by], references: [id], map: "fk_events_created_by")
+  destinations                   destinations?     @relation(fields: [destination_id], references: [id], map: "fk_events_destination")
+  media                          Media?            @relation(fields: [hero_media_id], references: [id], map: "fk_events_hero_media")
+  businesses                     businesses?       @relation(fields: [organizer_business_id], references: [id], map: "fk_events_organizer")
+  users_events_updated_byTousers User?             @relation("events_updated_byTousers", fields: [updated_by], references: [id], map: "fk_events_updated_by")
+
+  @@index([created_by], map: "fk_events_created_by")
+  @@index([hero_media_id], map: "fk_events_hero_media")
+  @@index([organizer_business_id], map: "fk_events_organizer")
+  @@index([updated_by], map: "fk_events_updated_by")
+  @@index([start_at, status], map: "idx_events_date_status")
+  @@index([destination_id], map: "idx_events_destination")
+  @@index([is_featured], map: "idx_events_featured")
+}
+
+model faqs {
+  id               BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  question         String             @db.VarChar(1000)
+  answer_html      String             @db.LongText
+  status           faqs_status        @default(active)
+  created_by       BigInt?            @db.UnsignedBigInt
+  created_at       DateTime           @default(now()) @db.DateTime(0)
+  updated_at       DateTime           @default(now()) @db.DateTime(0)
+  entity_faq_links entity_faq_links[]
+  users            User?              @relation(fields: [created_by], references: [id], map: "fk_faqs_created_by")
+
+  @@index([created_by], map: "fk_faqs_created_by")
+}
+
+model hotel_profiles {
+  id                  BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  business_id         BigInt                       @unique(map: "uq_hotel_profiles_business") @db.UnsignedBigInt
+  property_type       hotel_profiles_property_type @default(hotel)
+  star_classification Int?                         @db.UnsignedTinyInt
+  check_in_time       DateTime?                    @db.Time(0)
+  check_out_time      DateTime?                    @db.Time(0)
+  total_rooms         Int?                         @db.UnsignedSmallInt
+  amenities_json      String?                      @db.LongText
+  policies_json       String?                      @db.LongText
+  booking_url         String?                      @db.VarChar(1000)
+  created_at          DateTime                     @default(now()) @db.DateTime(0)
+  updated_at          DateTime                     @default(now()) @db.DateTime(0)
+  businesses          businesses                   @relation(fields: [business_id], references: [id], onDelete: Cascade, map: "fk_hotel_profiles_business")
+}
+
+model menu_items {
+  id               BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  menu_id          BigInt            @db.UnsignedBigInt
+  parent_id        BigInt?           @db.UnsignedBigInt
+  route_id         BigInt?           @db.UnsignedBigInt
+  label            String            @db.VarChar(180)
+  custom_url       String?           @db.VarChar(1000)
+  icon             String?           @db.VarChar(100)
+  target           menu_items_target @default(self)
+  display_order    Int               @default(0)
+  is_active        Boolean           @default(true)
+  created_at       DateTime          @default(now()) @db.DateTime(0)
+  updated_at       DateTime          @default(now()) @db.DateTime(0)
+  menus            menus             @relation(fields: [menu_id], references: [id], onDelete: Cascade, map: "fk_menu_items_menu")
+  menu_items       menu_items?       @relation("menu_itemsTomenu_items", fields: [parent_id], references: [id], onDelete: Cascade, map: "fk_menu_items_parent")
+  other_menu_items menu_items[]      @relation("menu_itemsTomenu_items")
+  routes           Route?            @relation(fields: [route_id], references: [id], map: "fk_menu_items_route")
+
+  @@index([parent_id], map: "fk_menu_items_parent")
+  @@index([route_id], map: "fk_menu_items_route")
+  @@index([menu_id, parent_id, display_order], map: "idx_menu_items_menu_parent_order")
+}
+
+model menus {
+  id         BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String         @db.VarChar(150)
+  slug       String         @unique(map: "uq_menus_slug") @db.VarChar(150)
+  location   menus_location
+  status     menus_status   @default(active)
+  created_at DateTime       @default(now()) @db.DateTime(0)
+  updated_at DateTime       @default(now()) @db.DateTime(0)
+  menu_items menu_items[]
+}
+
+model page_sections {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  page_id       BigInt   @db.UnsignedBigInt
+  section_type  String   @db.VarChar(100)
+  heading       String?  @db.VarChar(255)
+  subheading    String?  @db.VarChar(500)
+  content_json  String?  @db.LongText
+  display_order Int      @default(0)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @db.DateTime(0)
+  pages         pages    @relation(fields: [page_id], references: [id], onDelete: Cascade, map: "fk_page_sections_page")
+
+  @@index([page_id, display_order, is_active], map: "idx_page_sections_page_order")
+}
+
+model pages {
+  id                            BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  title                         String          @db.VarChar(255)
+  slug                          String          @unique(map: "uq_pages_slug") @db.VarChar(180)
+  template                      String          @default("default-page") @db.VarChar(100)
+  excerpt                       String?         @db.Text
+  content_html                  String?         @db.LongText
+  content_json                  String?         @db.LongText
+  hero_media_id                 BigInt?         @db.UnsignedBigInt
+  status                        pages_status    @default(draft)
+  published_at                  DateTime?       @db.DateTime(0)
+  created_by                    BigInt?         @db.UnsignedBigInt
+  updated_by                    BigInt?         @db.UnsignedBigInt
+  created_at                    DateTime        @default(now()) @db.DateTime(0)
+  updated_at                    DateTime        @default(now()) @db.DateTime(0)
+  deleted_at                    DateTime?       @db.DateTime(0)
+  page_sections                 page_sections[]
+  users_pages_created_byTousers User?           @relation("pages_created_byTousers", fields: [created_by], references: [id], map: "fk_pages_created_by")
+  media                         Media?          @relation(fields: [hero_media_id], references: [id], map: "fk_pages_hero_media")
+  users_pages_updated_byTousers User?           @relation("pages_updated_byTousers", fields: [updated_by], references: [id], map: "fk_pages_updated_by")
+
+  @@index([created_by], map: "fk_pages_created_by")
+  @@index([hero_media_id], map: "fk_pages_hero_media")
+  @@index([updated_by], map: "fk_pages_updated_by")
+  @@index([status, published_at], map: "idx_pages_status_published")
+}
+
+model redirects {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  source_path      String    @unique(map: "uq_redirects_source") @db.VarChar(500)
+  destination_path String    @db.VarChar(500)
+  http_status      Int       @default(301) @db.UnsignedSmallInt
+  is_active        Boolean   @default(true)
+  hit_count        BigInt    @default(0) @db.UnsignedBigInt
+  last_hit_at      DateTime? @db.DateTime(0)
+  created_by       BigInt?   @db.UnsignedBigInt
+  created_at       DateTime  @default(now()) @db.DateTime(0)
+  updated_at       DateTime  @default(now()) @db.DateTime(0)
+  users            User?     @relation(fields: [created_by], references: [id], map: "fk_redirects_created_by")
+
+  @@index([created_by], map: "fk_redirects_created_by")
+  @@index([is_active], map: "idx_redirects_active")
+}
+
+model reviews {
+  id                                BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id                           BigInt?        @db.UnsignedBigInt
+  entity_type                       String         @db.VarChar(50)
+  entity_id                         BigInt         @db.UnsignedBigInt
+  reviewer_name                     String         @db.VarChar(150)
+  reviewer_email                    String?        @db.VarChar(255)
+  rating                            Int            @db.UnsignedTinyInt
+  title                             String?        @db.VarChar(255)
+  comment                           String?        @db.Text
+  status                            reviews_status @default(pending)
+  verified_visit                    Boolean        @default(false)
+  moderated_by                      BigInt?        @db.UnsignedBigInt
+  moderated_at                      DateTime?      @db.DateTime(0)
+  created_at                        DateTime       @default(now()) @db.DateTime(0)
+  updated_at                        DateTime       @default(now()) @db.DateTime(0)
+  deleted_at                        DateTime?      @db.DateTime(0)
+  users_reviews_moderated_byTousers User?          @relation("reviews_moderated_byTousers", fields: [moderated_by], references: [id], map: "fk_reviews_moderator")
+  users_reviews_user_idTousers      User?          @relation("reviews_user_idTousers", fields: [user_id], references: [id], map: "fk_reviews_user")
+
+  @@index([moderated_by], map: "fk_reviews_moderator")
+  @@index([entity_type, entity_id, status], map: "idx_reviews_entity_status")
+  @@index([user_id], map: "idx_reviews_user")
+}
+
+model roles {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String   @db.VarChar(100)
+  slug        String   @unique(map: "uq_roles_slug") @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @db.DateTime(0)
+  users       User[]
+}
+
+model schema_markup {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  entity_type       String   @db.VarChar(50)
+  entity_id         BigInt   @db.UnsignedBigInt
+  schema_type       String   @db.VarChar(100)
+  schema_json       String   @db.LongText
+  is_auto_generated Boolean  @default(true)
+  is_active         Boolean  @default(true)
+  created_by        BigInt?  @db.UnsignedBigInt
+  created_at        DateTime @default(now()) @db.DateTime(0)
+  updated_at        DateTime @default(now()) @db.DateTime(0)
+  users             User?    @relation(fields: [created_by], references: [id], map: "fk_schema_created_by")
+
+  @@unique([entity_type, entity_id, schema_type], map: "uq_schema_entity_type")
+  @@index([created_by], map: "fk_schema_created_by")
+  @@index([entity_type, entity_id, is_active], map: "idx_schema_active")
+}
+
+model seo_metadata {
+  id                                         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  entity_type                                String   @db.VarChar(50)
+  entity_id                                  BigInt   @db.UnsignedBigInt
+  meta_title                                 String?  @db.VarChar(255)
+  meta_description                           String?  @db.VarChar(320)
+  focus_keyword                              String?  @db.VarChar(255)
+  secondary_keywords_json                    String?  @db.LongText
+  canonical_url                              String?  @db.VarChar(1000)
+  robots_index                               Boolean  @default(true)
+  robots_follow                              Boolean  @default(true)
+  breadcrumb_title                           String?  @db.VarChar(255)
+  og_title                                   String?  @db.VarChar(255)
+  og_description                             String?  @db.VarChar(500)
+  og_image_id                                BigInt?  @db.UnsignedBigInt
+  twitter_title                              String?  @db.VarChar(255)
+  twitter_description                        String?  @db.VarChar(500)
+  twitter_image_id                           BigInt?  @db.UnsignedBigInt
+  created_at                                 DateTime @default(now()) @db.DateTime(0)
+  updated_at                                 DateTime @default(now()) @db.DateTime(0)
+  media_seo_metadata_og_image_idTomedia      Media?   @relation("seo_metadata_og_image_idTomedia", fields: [og_image_id], references: [id], map: "fk_seo_og_image")
+  media_seo_metadata_twitter_image_idTomedia Media?   @relation("seo_metadata_twitter_image_idTomedia", fields: [twitter_image_id], references: [id], map: "fk_seo_twitter_image")
+
+  @@unique([entity_type, entity_id], map: "uq_seo_entity")
+  @@index([og_image_id], map: "fk_seo_og_image")
+  @@index([twitter_image_id], map: "fk_seo_twitter_image")
+}
+
+model site_settings {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  setting_group String   @db.VarChar(100)
+  setting_key   String   @db.VarChar(180)
+  setting_value String?  @db.LongText
+  is_public     Boolean  @default(false)
+  updated_by    BigInt?  @db.UnsignedBigInt
+  created_at    DateTime @default(now()) @db.DateTime(0)
+  updated_at    DateTime @default(now()) @db.DateTime(0)
+  users         User?    @relation(fields: [updated_by], references: [id], map: "fk_site_settings_user")
+
+  @@unique([setting_group, setting_key], map: "uq_site_settings_group_key")
+  @@index([updated_by], map: "fk_site_settings_user")
+}
+
+model tags {
+  id           BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
+  name         String         @db.VarChar(150)
+  slug         String         @unique(map: "uq_tags_slug") @db.VarChar(180)
+  description  String?        @db.Text
+  status       tags_status    @default(active)
+  created_at   DateTime       @default(now()) @db.DateTime(0)
+  updated_at   DateTime       @default(now()) @db.DateTime(0)
+  article_tags article_tags[]
+}
+
+enum categories_scope {
+  attraction
+  business
+  article
+  event
+}
+
+enum hotel_profiles_property_type {
+  hotel
+  resort
+  homestay
+  guesthouse
+  villa
+  hostel
+  farmstay
+  other
+}
+
+enum articles_content_type {
+  guide
+  plan
+  blog
+  story
+  news
+}
+
+enum faqs_status {
+  active
+  inactive
+}
+
+enum content_imports_source_type {
+  markdown_paste
+  markdown_file
+  api
+  automation
+}
+
+enum menus_location {
+  header
+  footer
+  mobile
+  utility
+}
+
+enum tags_status {
+  active
+  inactive
+}
+
+enum destinations_destination_type {
+  district
+  taluka
+  town
+  village
+  beach_town   @map("beach-town")
+  hill_station @map("hill-station")
+  locality
+}
+
+enum entity_media_media_role {
+  hero
+  cover
+  logo
+  gallery
+  thumbnail
+  menu
+  certificate
+  document
+}
+
+enum menus_status {
+  active
+  inactive
+}
+
+enum routes_route_type {
+  listing
+  detail
+  page
+  category
+  search
+  system
+}
+
+enum users_status {
+  active
+  inactive
+  suspended
+}
+
+enum menu_items_target {
+  self  @map("_self")
+  blank @map("_blank")
+}
+
+enum contact_submissions_status {
+  new
+  in_progress
+  resolved
+  spam
+}
+
+enum pages_status {
+  draft
+  published
+  archived
+}
+
+enum categories_status {
+  active
+  inactive
+}
+
+enum business_services_status {
+  active
+  inactive
+}
+
+enum reviews_status {
+  pending
+  approved
+  rejected
+  spam
+}
+
+enum content_imports_import_status {
+  pending
+  processing
+  completed
+  failed
+  duplicate
+}
+
+enum routes_status {
+  active
+  inactive
+  redirect
+  gone
+}
+
+enum destinations_status {
+  draft
+  published
+  archived
+}
+
+enum business_submissions_status {
+  pending
+  under_review
+  approved
+  rejected
+  duplicate
+  spam
+}
+
+enum articles_status {
+  draft
+  pending_review
+  scheduled
+  published
+  archived
+  trash
+}
+
+enum authors_status {
+  active
+  inactive
+}
+
+enum articles_visibility {
+  public
+  private
+  password_protected
+}
+
+enum events_entry_type {
+  free
+  paid
+  registration_required
+  invite_only
+}
+
+enum media_status {
+  active
+  unused
+  archived
+  deleted
+}
+
+enum events_status {
+  draft
+  pending_review
+  published
+  cancelled
+  completed
+  archived
+}
+
+enum attractions_status {
+  draft
+  pending_review
+  published
+  archived
+  rejected
+}
+
+enum businesses_verification_status {
+  unverified
+  pending
+  verified
+  rejected
+  expired
+}
+
+enum businesses_claim_status {
+  unclaimed
+  claim_pending
+  claimed
+  claim_rejected
+}
+
+enum businesses_status {
+  draft
+  pending_review
+  published
+  suspended
+  rejected
+  archived
 }
