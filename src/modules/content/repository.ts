@@ -14,47 +14,47 @@ export class ContentRepository {
     const where: any = {}
     if (q) where.OR = [{ title: { contains: q } }, { excerpt: { contains: q } }]
     if (slug) where.slug = slug
-    if (type && type !== 'all') where.type = type.toUpperCase()
-    if (status) where.status = status.toUpperCase()
+    if (type && type !== 'all') where.content_type = type.toLowerCase()
+    if (status) where.status = status.toLowerCase()
 
     const [items, total] = await Promise.all([
-      db.content.findMany({
+      db.articles.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { updatedAt: 'desc' },
-        include: { seo: true },
+        orderBy: { updated_at: 'desc' },
+        include: { media: true },
       }),
-      db.content.count({ where }),
+      db.articles.count({ where }),
     ])
 
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) }
   }
 
   findById(id: number) {
-    return db.content.findUnique({
-      where: { id },
-      include: { seo: true, taxonomies: { include: { taxonomy: true } }, media: { include: { media: true } } },
+    return db.articles.findUnique({
+      where: { id: BigInt(id) },
+      include: { article_tags: { include: { tags: true } }, media: true },
     })
   }
 
   findRelated(type: string, excludeId: number) {
-    return db.content.findMany({
-      where: { type: type.toUpperCase() as any, status: 'PUBLISHED', id: { not: excludeId } },
+    return db.articles.findMany({
+      where: { content_type: type as any, status: 'published', id: { not: BigInt(excludeId) } },
       take: 4,
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updated_at: 'desc' },
     })
   }
 
   create(data: any) {
-    return db.content.create({ data })
+    return db.articles.create({ data })
   }
 
   update(id: number, data: any) {
-    return db.content.update({ where: { id }, data })
+    return db.articles.update({ where: { id: BigInt(id) }, data })
   }
 
   delete(id: number) {
-    return db.content.delete({ where: { id } })
+    return db.articles.delete({ where: { id: BigInt(id) } })
   }
 }

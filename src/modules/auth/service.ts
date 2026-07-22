@@ -6,7 +6,7 @@ import { UnauthorizedError, NotFoundError } from '@/shared/errors'
 
 export class AuthService {
   async login(email: string, password: string) {
-    const user = await db.user.findUnique({ where: { email }, include: { roles: true } })
+    const user = await db.users.findUnique({ where: { email }, include: { roles: true } })
     if (!user) throw new UnauthorizedError('Invalid credentials')
 
     const valid = await bcrypt.compare(password, user.password_hash)
@@ -27,7 +27,7 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
-    const user = await db.user.findUnique({
+    const user = await db.users.findUnique({
       where: { id: BigInt(userId) },
       include: { roles: true }
     })

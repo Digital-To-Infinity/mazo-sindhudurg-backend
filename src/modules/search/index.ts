@@ -9,14 +9,14 @@ export const search = async (req: Request, res: Response, next: NextFunction) =>
     const { page, limit } = parsePagination(req.query)
 
     const where: any = {
-      status: 'PUBLISHED',
+      status: 'published',
       OR: [{ title: { contains: q } }, { excerpt: { contains: q } }],
     }
-    if (type && type !== 'all') where.type = type.toUpperCase()
+    if (type && type !== 'all') where.content_type = type.toLowerCase()
 
     const [items, total] = await Promise.all([
-      db.content.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { updatedAt: 'desc' } }),
-      db.content.count({ where }),
+      db.articles.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { updated_at: 'desc' } }),
+      db.articles.count({ where }),
     ])
 
     sendSuccess(res, { items, total, page, limit, totalPages: Math.ceil(total / limit) })

@@ -28,7 +28,9 @@ export class MediaService {
   async delete(id: number) {
     const media = await repo.findById(id)
     if (!media) throw new NotFoundError('Media not found')
-    await destroyFromCloudinary(media.publicId)
+    if (media.provider === 'cloudinary') {
+      await destroyFromCloudinary(media.public_id)
+    }
     return repo.delete(id)
   }
 }

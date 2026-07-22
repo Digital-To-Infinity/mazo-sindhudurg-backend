@@ -4,13 +4,13 @@ async function main() {
   console.log('🔍 Checking database connection...')
   try {
     await db.$connect()
-    const userCount = await db.user.count()
-    const contentCount = await db.content.count()
+    const userCount = await db.users.count()
+    const contentCount = await db.articles.count()
     const mediaCount = await db.media.count()
 
     console.log('✅ Database connected successfully')
     console.log(`   Users:   ${userCount}`)
-    console.log(`   Content: ${contentCount}`)
+    console.log(`   Articles: ${contentCount}`)
     console.log(`   Media:   ${mediaCount}`)
   } catch (err) {
     console.error('❌ Database connection failed:', err)

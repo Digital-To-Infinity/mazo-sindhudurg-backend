@@ -5,9 +5,8 @@ import { db } from '@/config/database'
  */
 export class SchemaService {
   async buildForContent(contentId: number) {
-    const content = await db.content.findUnique({
-      where: { id: contentId },
-      include: { seo: true },
+    const content = await db.articles.findUnique({
+      where: { id: BigInt(contentId) },
     })
     if (!content) return null
 
@@ -19,7 +18,6 @@ export class SchemaService {
       name: content.title,
       description: content.excerpt,
       url: `${base}/${content.slug}`,
-      image: content.heroImage,
     }
   }
 }

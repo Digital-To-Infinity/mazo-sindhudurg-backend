@@ -1,7 +1,7 @@
-import { prisma } from '@/config/prisma'
+import { db } from '@/config/database'
 
 export async function getAllAuthors() {
-  const authors = await prisma.authors.findMany({
+  const authors = await db.authors.findMany({
     where: {
       status: 'active',
       deleted_at: null
